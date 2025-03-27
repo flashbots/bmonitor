@@ -258,6 +258,16 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 						nonceGapStart = nonce
 					}
 					missingTxCount++
+
+					if tx == nil {
+						l.Warn("Tx is not known to any builder",
+							zap.String("builder", builder),
+							zap.String("from", addr),
+							zap.String("nonce", strNonce),
+						)
+						continue
+					}
+
 					l.Warn("Tx is not known to the builder",
 						zap.String("builder", builder),
 						zap.String("from", addr),

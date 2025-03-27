@@ -45,6 +45,13 @@ func (s *Server) analysePeers(ctx context.Context, status map[string]*types.Buil
 				internal++
 			default:
 				external++
+				l.Debug("Builder has external peer",
+					zap.String("builder", builder),
+					zap.String("enode", peer.Enode),
+					zap.String("id", peer.ID),
+					zap.Strings("caps", peer.Capabilities),
+					zap.String("name", peer.Name),
+				)
 			}
 		}
 
@@ -199,7 +206,7 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 			_nonceMax := nonceMax[addr]
 
 			if _nonceMin > _nonceMax {
-				l.Debug("No un-included transactions from address, skipping",
+				l.Info("No un-included transactions from address, skipping",
 					zap.String("builder", builder),
 					zap.String("from", addr),
 					zap.Uint64("nonce", noncePending),
@@ -207,7 +214,7 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 				continue
 			}
 
-			l.Debug("Iterating through nonces",
+			l.Info("Iterating through nonces",
 				zap.String("builder", builder),
 				zap.String("from", addr),
 				zap.Uint64("nonce_min", _nonceMin),
@@ -227,7 +234,7 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 					if nonceGapStart != 0 {
 						length := nonce - nonceGapStart
 						nonceGapsLength += length
-						l.Info("Nonce gap detected",
+						l.Warn("Nonce gap detected",
 							zap.String("builder", builder),
 							zap.String("from", addr),
 							zap.Uint64("nonce_gap_start", nonceGapStart),
@@ -250,7 +257,7 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 						nonceGapStart = nonce
 					}
 					missingTxCount++
-					l.Info("Tx is not known to the builder",
+					l.Warn("Tx is not known to the builder",
 						zap.String("builder", builder),
 						zap.String("from", addr),
 						zap.String("nonce", strNonce),

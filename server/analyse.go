@@ -47,10 +47,11 @@ func (s *Server) analysePeers(ctx context.Context, status map[string]*types.Buil
 				external++
 				l.Debug("Builder has external peer",
 					zap.String("builder", builder),
-					zap.String("enode", peer.Enode),
-					zap.String("id", peer.ID),
-					zap.Strings("caps", peer.Capabilities),
-					zap.String("name", peer.Name),
+					zap.String("peer_enode", peer.Enode),
+					zap.String("peer_id", peer.ID),
+					zap.Strings("peer_caps", peer.Capabilities),
+					zap.String("peer_name", peer.Name),
+					zap.String("peer_ip", peer.Network.RemoteAddress),
 				)
 			}
 		}

@@ -87,11 +87,14 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 		}
 	}
 
-	txpoolByHash := make(map[string]*jrpc.TxpoolContent_Tx, size)
-	txpoolByAddrNonce := make(map[string]map[uint64]*jrpc.TxpoolContent_Tx, size)
-	nonceMin := make(map[string]uint64)
-	nonceMax := make(map[string]uint64)
-	addresses := make(map[string]struct{})
+	var (
+		txpoolByHash        = make(map[string]*jrpc.TxpoolContent_Tx, size)
+		txpoolByAddrNonce   = make(map[string]map[uint64]*jrpc.TxpoolContent_Tx, size)
+		nonceMin            = make(map[string]uint64)
+		nonceMax            = make(map[string]uint64)
+		addresses           = make(map[string]struct{})
+		unknownTransactions = make(map[string]map[uint64]struct{})
+	)
 
 	ingestTx := func(tx *jrpc.TxpoolContent_Tx, builder string) {
 		if _, known := addresses[tx.From]; !known {
@@ -193,7 +196,7 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 				continue
 			}
 
-			noncePending, err := s.builders[builder].PendingNonceAt(ctx, addrEth)
+			noncePending, err := s.builders[builder].NonceAt(ctx, addrEth, nil)
 			if err != nil {
 				l.Warn("Failed to get pending nonce",
 					zap.Error(err),
@@ -242,6 +245,7 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 							zap.Uint64("nonce_gap_end", nonce-1),
 							zap.Uint64("nonce_gap_length", length),
 						)
+						nonceGapStart = 0
 					}
 					continue
 
@@ -260,11 +264,12 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 					missingTxCount++
 
 					if tx == nil {
-						l.Warn("Tx is not known to any builder",
-							zap.String("builder", builder),
-							zap.String("from", addr),
-							zap.String("nonce", strNonce),
-						)
+						if _, exists := unknownTransactions[addr]; !exists {
+							unknownTransactions[addr] = make(map[uint64]struct{})
+						}
+						if _, exists := unknownTransactions[addr][nonce]; !exists {
+							unknownTransactions[addr][nonce] = struct{}{}
+						}
 						continue
 					}
 
@@ -286,4 +291,17 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 			attribute.KeyValue{Key: "builder", Value: attribute.StringValue(builder)},
 		))
 	}
+
+	unknownTransactionsCount := 0
+	for addr, nonces := range unknownTransactions {
+		unknownTransactionsCount += len(nonces)
+		for nonce := range nonces {
+			l.Warn("Tx is not known to any builder",
+				zap.String("from", addr),
+				zap.Uint64("nonce", nonce),
+			)
+		}
+	}
+
+	metrics.TxpoolUnknownTxCount.Record(ctx, int64(unknownTransactionsCount))
 }

@@ -24,6 +24,7 @@ func Setup(ctx context.Context) error {
 		setupTxpoolDuplicateNonceCount,
 		setupTxpoolNonceGapsLength,
 		setupTxpoolMissingTxCount,
+		setupTxpoolUnknownTxCount,
 	} {
 		if err := setup(ctx); err != nil {
 			return err
@@ -98,5 +99,16 @@ func setupTxpoolMissingTxCount(ctx context.Context) error {
 		return err
 	}
 	TxpoolMissingTxCount = m
+	return nil
+}
+
+func setupTxpoolUnknownTxCount(ctx context.Context) error {
+	m, err := meter.Int64Gauge("txpool_unknown_tx_count",
+		otelapi.WithDescription("count of transactions not known to any builder"),
+	)
+	if err != nil {
+		return err
+	}
+	TxpoolUnknownTxCount = m
 	return nil
 }

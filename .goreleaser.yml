@@ -42,14 +42,14 @@ dockers:
     build_flag_templates:
       - --platform=linux/arm64
     image_templates:
-      - "flashbots/bmonitor:{{ .Tag }}-amd64"
+      - "flashbots/bmonitor:{{ .Tag }}-arm64"
       - "ghcr.io/flashbots/bmonitor:{{ .Tag }}-arm64"
 
 docker_manifests:
   - name_template: "flashbots/bmonitor:{{ .Tag }}"
     image_templates:
       - "flashbots/bmonitor:{{ .Tag }}-amd64"
-      - "flashbots/bmonitor:{{ .Tag }}-amd64"
+      - "flashbots/bmonitor:{{ .Tag }}-arm64"
   - name_template: "ghcr.io/flashbots/bmonitor:{{ .Tag }}"
     image_templates:
       - "ghcr.io/flashbots/bmonitor:{{ .Tag }}-amd64"

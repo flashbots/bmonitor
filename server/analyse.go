@@ -20,13 +20,17 @@ import (
 func (s *Server) analysePeers(ctx context.Context, status map[string]*types.BuilderStatus) {
 	l := logutils.LoggerFromContext(ctx)
 
-	for builder, s := range status {
-		if s.Peers == nil {
+	for builder, builderStatus := range status {
+		if builderStatus.Peers == nil {
 			continue
 		}
 
-		var loopback, internal, external int64
-		for _, peer := range *s.Peers {
+		var (
+			loopback, internal, external int64
+			labelled                     = make(map[string]int64, 0)
+		)
+
+		for _, peer := range *builderStatus.Peers {
 			addr, err := net.ResolveTCPAddr("tcp", peer.Network.RemoteAddress)
 			if err != nil {
 				l.Warn("Failed to parse peer's remote address",
@@ -54,6 +58,9 @@ func (s *Server) analysePeers(ctx context.Context, status map[string]*types.Buil
 					zap.String("peer_ip", peer.Network.RemoteAddress),
 				)
 			}
+			if label, known := s.peers[addr.IP.String()]; known {
+				labelled[label] += 1
+			}
 		}
 
 		metrics.PeersCount.Record(ctx, loopback, otelapi.WithAttributes(
@@ -70,6 +77,14 @@ func (s *Server) analysePeers(ctx context.Context, status map[string]*types.Buil
 			attribute.KeyValue{Key: "builder", Value: attribute.StringValue(builder)},
 			attribute.KeyValue{Key: "type", Value: attribute.StringValue("external")},
 		))
+
+		for label, count := range labelled {
+			metrics.PeersCount.Record(ctx, count, otelapi.WithAttributes(
+				attribute.KeyValue{Key: "builder", Value: attribute.StringValue(builder)},
+				attribute.KeyValue{Key: "type", Value: attribute.StringValue("labelled")},
+				attribute.KeyValue{Key: "label", Value: attribute.StringValue(label)},
+			))
+		}
 	}
 }
 

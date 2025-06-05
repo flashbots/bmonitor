@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net"
 	"net/url"
 	"strings"
 	"time"
@@ -13,12 +14,14 @@ import (
 type Monitor struct {
 	Builders []string      `yaml:"builders"`
 	Interval time.Duration `yaml:"interval"`
+	Peers    []string      `yaml:"peers"`
 	Timeout  time.Duration `yaml:"timeout"`
 }
 
 var (
 	errMonitorInvalidBuilder  = errors.New("invalid builder")
 	errMonitorInvalidInterval = errors.New("invalid monitoring interval (must be non-zero and up to 1h)")
+	errMonitorInvalidPeer     = errors.New("invalid peer")
 	errMonitorInvalidTimeout  = errors.New("invalid monitoring timeout (must be non-zero, up to 1m, and less than monitoring interval)")
 )
 
@@ -46,6 +49,23 @@ func (cfg *Monitor) Validate() error {
 			errs = append(errs, fmt.Errorf("%w: %s",
 				errMonitorInvalidInterval, cfg.Interval,
 			))
+		}
+	}
+
+	{ // peers
+		for _, peer := range cfg.Peers {
+			parts := strings.Split(peer, "=")
+			if len(parts) != 2 {
+				errs = append(errs, fmt.Errorf("%w: %s: must be in format 'label=ip.add.re.ss'",
+					errMonitorInvalidPeer, peer,
+				))
+			}
+			ip := strings.TrimSpace(parts[1])
+			if net.ParseIP(ip) == nil {
+				errs = append(errs, fmt.Errorf("%w: %s: invalid ip address",
+					errMonitorInvalidPeer, peer,
+				))
+			}
 		}
 	}
 

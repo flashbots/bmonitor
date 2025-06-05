@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -33,6 +34,7 @@ type Server struct {
 	server *http.Server
 
 	builders map[string]*ethclient.Client
+	peers    map[string]string
 	ticker   *time.Ticker
 }
 
@@ -51,11 +53,38 @@ func New(cfg *config.Config) (*Server, error) {
 		builders[name] = rpc
 	}
 
+	peers := make(map[string]string, 0)
+	for _, peer := range cfg.Monitor.Peers {
+		parts := strings.Split(peer, "=")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid peer config: %s", peer)
+		}
+		label := strings.TrimSpace(parts[0])
+		if len(label) == 0 {
+			return nil, fmt.Errorf("invalid peer label: %s", peer)
+		}
+		ip := net.ParseIP(strings.TrimSpace(parts[1]))
+		if ip == nil {
+			if len(label) == 0 {
+				return nil, fmt.Errorf("invalid peer ip: %s", peer)
+			}
+		}
+		if _, known := peers[ip.String()]; known {
+			if len(label) == 0 {
+				return nil, fmt.Errorf("duplicate ip: %s vs %s",
+					peer, fmt.Sprintf("%s=%s", label, peers[ip.String()]),
+				)
+			}
+		}
+		peers[ip.String()] = label
+	}
+
 	s := &Server{
 		builders: builders,
 		cfg:      cfg,
 		failure:  make(chan error, 1),
 		logger:   zap.L(),
+		peers:    peers,
 		ticker:   time.NewTicker(cfg.Monitor.Interval),
 	}
 

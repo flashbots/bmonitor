@@ -18,6 +18,7 @@ const (
 
 func CommandServe(cfg *config.Config) *cli.Command {
 	monitorBuilders := &cli.StringSlice{}
+	monitorPeers := &cli.StringSlice{}
 
 	monitorFlags := []cli.Flag{
 		&cli.StringSliceFlag{
@@ -35,6 +36,14 @@ func CommandServe(cfg *config.Config) *cli.Command {
 			Name:        categoryMonitor + "-interval",
 			Usage:       "`interval` at which to query builders for their status",
 			Value:       5 * time.Second,
+		},
+
+		&cli.StringSliceFlag{
+			Category:    strings.ToUpper(categoryMonitor),
+			Destination: monitorPeers,
+			EnvVars:     []string{envPrefix + strings.ToUpper(categoryMonitor) + "_PEERS"},
+			Name:        categoryMonitor + "-peers",
+			Usage:       "list of monitored builder rpc endpoints in the format `label=ip`",
 		},
 
 		&cli.DurationFlag{
@@ -70,6 +79,7 @@ func CommandServe(cfg *config.Config) *cli.Command {
 
 		Before: func(_ *cli.Context) error {
 			cfg.Monitor.Builders = monitorBuilders.Value()
+			cfg.Monitor.Peers = monitorPeers.Value()
 			return cfg.Validate()
 		},
 

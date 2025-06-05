@@ -53,6 +53,7 @@ OPTIONS:
 
    --monitor-builders name=url [ --monitor-builders name=url ]  list of monitored builder rpc endpoints in the format name=url [$BMONITOR_MONITOR_BUILDERS]
    --monitor-interval interval                                  interval at which to query builders for their status (default: 5s) [$BMONITOR_MONITOR_INTERVAL]
+   --monitor-peers label=ip [ --monitor-peers label=ip ]        list of monitored builder rpc endpoints in the format label=ip [$BMONITOR_MONITOR_PEERS]
    --monitor-timeout duration                                   timeout duration for rpc queries (default: 500ms) [$BMONITOR_MONITOR_TIMEOUT]
 
    SERVER

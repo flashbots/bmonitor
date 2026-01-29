@@ -65,13 +65,15 @@ func (s *Server) getStatus(ctx context.Context, builder *ethclient.Client) *type
 		)
 	}
 
-	if txpool, err := s.getTxpool(ctx, builder); err == nil {
-		res.Txpool = txpool
-	} else {
-		errs = append(errs, err)
-		l.Error("Failed to get builder's txpool",
-			zap.Error(err),
-		)
+	if !s.cfg.Monitor.NoTxpool {
+		if txpool, err := s.getTxpool(ctx, builder); err == nil {
+			res.Txpool = txpool
+		} else {
+			errs = append(errs, err)
+			l.Error("Failed to get builder's txpool",
+				zap.Error(err),
+			)
+		}
 	}
 
 	res.Err = utils.FlattenErrors(errs)

@@ -89,6 +89,10 @@ func (s *Server) analysePeers(ctx context.Context, status map[string]*types.Buil
 }
 
 func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.BuilderStatus) {
+	if s.cfg.Monitor.NoTxpool {
+		return
+	}
+
 	l := logutils.LoggerFromContext(ctx)
 
 	size := 0

@@ -38,6 +38,14 @@ func CommandServe(cfg *config.Config) *cli.Command {
 			Value:       5 * time.Second,
 		},
 
+		&cli.BoolFlag{
+			Category:    strings.ToUpper(categoryMonitor),
+			Destination: &cfg.Monitor.NoTxpool,
+			EnvVars:     []string{envPrefix + strings.ToUpper(categoryMonitor) + "_NO_TXPOOL"},
+			Name:        categoryMonitor + "-no-txpool",
+			Usage:       "do not check txpools for nonce gaps",
+		},
+
 		&cli.StringSliceFlag{
 			Category:    strings.ToUpper(categoryMonitor),
 			Destination: monitorPeers,

@@ -12,6 +12,8 @@ import (
 )
 
 type Monitor struct {
+	NoTxpool bool `yaml:"no_txpool"`
+
 	Builders []string      `yaml:"builders"`
 	Interval time.Duration `yaml:"interval"`
 	Peers    []string      `yaml:"peers"`

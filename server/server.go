@@ -19,10 +19,11 @@ import (
 	"github.com/flashbots/bmonitor/metrics"
 	"github.com/flashbots/bmonitor/utils"
 
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/zap"
-
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go.opentelemetry.io/otel/attribute"
+	otelapi "go.opentelemetry.io/otel/metric"
+	"go.uber.org/zap"
 )
 
 type Server struct {
@@ -114,6 +115,8 @@ func (s *Server) Run() error {
 		return err
 	}
 
+	s.initializePeersMetrics(ctx)
+
 	go func() { // run the server
 		l.Info("Builder monitor server is going up...",
 			zap.String("server_listen_address", s.cfg.Server.ListenAddress),
@@ -181,4 +184,22 @@ func (s *Server) Run() error {
 	}
 
 	return utils.FlattenErrors(errs)
+}
+
+func (s *Server) initializePeersMetrics(ctx context.Context) {
+	for builder := range s.builders {
+		for _, typ := range []string{"loopback", "internal", "external"} {
+			metrics.PeersCount.Record(ctx, 0, otelapi.WithAttributes(
+				attribute.KeyValue{Key: "builder", Value: attribute.StringValue(builder)},
+				attribute.KeyValue{Key: "type", Value: attribute.StringValue(typ)},
+			))
+		}
+		for _, label := range s.peers {
+			metrics.PeersCount.Record(ctx, 0, otelapi.WithAttributes(
+				attribute.KeyValue{Key: "builder", Value: attribute.StringValue(builder)},
+				attribute.KeyValue{Key: "type", Value: attribute.StringValue("labelled")},
+				attribute.KeyValue{Key: "label", Value: attribute.StringValue(label)},
+			))
+		}
+	}
 }

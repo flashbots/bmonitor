@@ -215,6 +215,12 @@ func (s *Server) analyseTxpool(ctx context.Context, status map[string]*types.Bui
 				continue
 			}
 
+			l.Debug("Calling builder RPC",
+				zap.String("builder", builder),
+				zap.String("method", "eth_getTransactionCount"),
+				zap.String("addr", addr),
+			)
+
 			noncePending, err := s.builders[builder].NonceAt(ctx, addrEth, nil)
 			if err != nil {
 				l.Warn("Failed to get pending nonce",
